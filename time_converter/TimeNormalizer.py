@@ -194,6 +194,7 @@ class TimeNormalizer:
         Time_NLP_LOGGER.debug(f'待处理的字段: {temp}')
         for i in range(0, rpointer):
             # 这里是一个类嵌套了一个类
+            Time_NLP_LOGGER.debug('Last TP:{}'.format(contextTp))
             time_convert_result = TimeUnit(temp[i], self, contextTp)
             if time_convert_result.get_fuzzy()=='null':
                 # Time_NLP_LOGGER.debug('Fuzzy Not rec')
@@ -201,10 +202,10 @@ class TimeNormalizer:
             res.append(time_convert_result)
             # res[i].tp.tunit[3] = -1
 
-            #上一个时间点 -- 改
-            # contextTp = res[i].tp
+            # 上一个时间点 -- 改
+            contextTp = res[i].tp
 
-            contextTp = TimePoint()
+            # contextTp = TimePoint()
 
         Time_NLP_LOGGER.debug(f'时间表达式类型数组 {res}')
         res = self.__filterTimeUnit(res)

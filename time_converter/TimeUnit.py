@@ -129,7 +129,7 @@ class TimeUnit:
         match = pattern.search(target_sentence)
         if match is not None:
             self.fuzzy = 'before'
-        
+
         rule = u"(之后)|(以后)"
         pattern = re.compile(rule)
         if match_raw == None:
@@ -211,7 +211,7 @@ class TimeUnit:
             if k in sentence and k!='分':
                 ans = max(ans, new_grad[k])
 
-        # for k in 
+        # for k in
 
         return ans
 
@@ -294,7 +294,7 @@ class TimeUnit:
             self.granularity = '季'
             # 处理倾向于未来时间的情况
             # self.preferFuture(1)
-        
+
         rule = u"(夏天)|(夏季)|(夏)"
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
@@ -336,7 +336,21 @@ class TimeUnit:
             self.tp.tunit[1] = int(10)
             self.granularity = '季'
 
-        
+        rule = u"上半年"
+        pattern = re.compile(rule)
+        match = pattern.search(self.exp_time)
+        if match is not None:
+            self.tp.tunit[1] = int(1)
+            self.granularity = '半年'
+
+        rule = u"下半年"
+        pattern = re.compile(rule)
+        match = pattern.search(self.exp_time)
+        if match is not None:
+            self.tp.tunit[1] = int(7)
+            self.granularity = '半年'
+
+
 
     def norm_setmonth(self):
         """
@@ -450,6 +464,7 @@ class TimeUnit:
                 self.tp.tunit[3] = 12
             # 处理倾向于未来时间的情况
             # self.preferFuture(3)
+            self.checkContextTime(3)
             self.isAllDayTime = False
             self.granularity = '时'
 
@@ -465,6 +480,7 @@ class TimeUnit:
             elif self.tp.tunit[3] == 0:
                 self.tp.tunit[3] = 12
             # self.preferFuture(3)
+            self.checkContextTime(3)
             self.isAllDayTime = False
             self.granularity = '时'
 
@@ -480,6 +496,7 @@ class TimeUnit:
                 self.tp.tunit[3] = 12
             # 处理倾向于未来时间的情况
             # self.preferFuture(3)
+            self.checkContextTime(3)
             self.isAllDayTime = False
             self.granularity = '时'
 
@@ -493,6 +510,7 @@ class TimeUnit:
                 self.tp.tunit[3] = RangeTimeEnum.noon
             # 处理倾向于未来时间的情况
             # self.preferFuture(3)
+            self.checkContextTime(3)
             self.isAllDayTime = False
             self.granularity = '时'
 
@@ -506,6 +524,7 @@ class TimeUnit:
                 self.tp.tunit[3] = RangeTimeEnum.afternoon
             # 处理倾向于未来时间的情况
             # self.preferFuture(3)
+            self.checkContextTime(3)
             self.isAllDayTime = False
             self.granularity = '时'
 
@@ -521,6 +540,7 @@ class TimeUnit:
                 self.tp.tunit[3] = RangeTimeEnum.lateNight
             # 处理倾向于未来时间的情况
             # self.preferFuture(3)
+            self.checkContextTime(3)
             self.isAllDayTime = False
             self.granularity = '时'
 
@@ -538,6 +558,7 @@ class TimeUnit:
             self.norm_checkKeyword()
             # 处理倾向于未来时间的情况
             # self.preferFuture(3)
+            self.checkContextTime(3)
             self.granularity = '时'
             self.isAllDayTime = False
         else:
@@ -977,6 +998,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[0] = True
             cur = cur.shift(years=-2)
 
@@ -984,6 +1006,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[0] = True
             cur = cur.shift(years=-1)
 
@@ -991,6 +1014,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[0] = True
             cur = cur.shift(years=0)
 
@@ -998,6 +1022,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[0] = True
             cur = cur.shift(years=1)
 
@@ -1005,6 +1030,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[0] = True
             cur = cur.shift(years=2)
 
@@ -1012,6 +1038,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[1] = True
             rule = u"上"
             pattern = re.compile(rule)
@@ -1022,6 +1049,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[1] = True
             cur = cur.shift(months=0)
 
@@ -1029,6 +1057,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[1] = True
             rule = u"下"
             pattern = re.compile(rule)
@@ -1039,6 +1068,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[2] = True
             rule = u"大"
             pattern = re.compile(rule)
@@ -1049,6 +1079,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[2] = True
             cur = cur.shift(days=-2)
 
@@ -1056,6 +1087,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[2] = True
             cur = cur.shift(days=-1)
 
@@ -1063,6 +1095,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[2] = True
             cur = cur.shift(days=0)
 
@@ -1070,6 +1103,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[2] = True
             cur = cur.shift(days=1)
 
@@ -1077,6 +1111,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             flag[2] = True
             cur = cur.shift(days=2)
 
@@ -1084,6 +1119,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
+            cur =arrow.now('Asia/Shanghai')
             rule = u"大"
             pattern = re.compile(rule)
             match = pattern.findall(self.exp_time)
@@ -1286,6 +1322,7 @@ class TimeUnit:
         # 在处理小时这个级别时，如果上文时间是下午的且下文没有主动声明小时级别以上的时间，则也把下文时间设为下午
         if self.isFirstTimeSolveContext is True and checkTimeIndex == 3 and self.tp_origin.tunit[
             checkTimeIndex] >= 12 and self.tp.tunit[checkTimeIndex] < 12:
+            Time_NLP_LOGGER.debug('Context Time : {} {}'.format(self.tp_origin, self.tp))
             self.tp.tunit[checkTimeIndex] += 12
         self.isFirstTimeSolveContext = False
 
