@@ -12,14 +12,14 @@ from .TimeUnit import TimeUnit
 
 # 时间表达式识别的主要工作类
 class TimeNormalizer:
-    def __init__(self, isPreferFuture=True):
-        self.isPreferFuture = isPreferFuture
+    def __init__(self, is_prefer_future=True):
+        self.isPreferFuture = is_prefer_future
         self.pattern, self.holi_solar, self.holi_lunar = self.init()
 
     # 这里对一些不规范的表达做转换
     def _filter(self, input_query):
         # 这里对于下个周末这种做转化 把个给移除掉
-        input_query = StringPreHandler.numberTranslator(input_query)
+        input_query = StringPreHandler.number_translator(input_query)
 
         rule = u"[0-9]月[0-9]"
         pattern = re.compile(rule)
@@ -54,9 +54,9 @@ class TimeNormalizer:
         return input_query
 
     def init(self):
-        fpath = os.path.dirname(__file__) + '/resource/reg.pkl'
+        file_path = os.path.dirname(__file__) + '/resource/reg.pkl'
         try:
-            with open(fpath, 'rb') as f:
+            with open(file_path, 'rb') as f:
                 pattern = pickle.load(f)
         except Exception:
             with open(os.path.dirname(__file__) + '/resource/regex.txt',
@@ -64,9 +64,9 @@ class TimeNormalizer:
                       encoding="utf-8") as f:
                 content = f.read()
             p = re.compile(content)
-            with open(fpath, 'wb') as f:
+            with open(file_path, 'wb') as f:
                 pickle.dump(p, f)
-            with open(fpath, 'rb') as f:
+            with open(file_path, 'rb') as f:
                 pattern = pickle.load(f)
 
         with open(os.path.dirname(__file__) + '/resource/holi_solar.json',
@@ -79,10 +79,10 @@ class TimeNormalizer:
             holi_lunar = json.load(f)
         return pattern, holi_solar, holi_lunar
 
-    def parse(self, target, timeBase=arrow.now('Asia/Shanghai')):
+    def parse(self, target, time_base=arrow.now('Asia/Shanghai')):
         """
         TimeNormalizer的构造方法，timeBase取默认的系统当前时间
-        :param timeBase: 基准时间点
+        :param time_base: 基准时间点
         :param target: 待分析字符串
         :return: 时间单元数组
         """
@@ -91,8 +91,8 @@ class TimeNormalizer:
         self.invalidSpan = False
         self.timeSpan = ''
         self.target = self._filter(target)
-        self.timeBase = arrow.get(timeBase).format('YYYY-M-D-H-m-s')
-        self.nowTime = timeBase
+        self.timeBase = arrow.get(time_base).format('YYYY-M-D-H-m-s')
+        self.nowTime = time_base
         self.oldTimeBase = self.timeBase
         self.__preHandling()
         self.timeToken = self.__timeEx()
@@ -104,47 +104,47 @@ class TimeNormalizer:
         for i, x in enumerate(res):
             Time_NLP_LOGGER.debug(f'Class: {i, x, x.get_granularity()}')
             pass
-        # self.granularity 
+        # self.granularity
 
         if self.isTimeSpan:
             if self.invalidSpan:
-                dic['type'] = 'error'
-                dic['error'] = 'no time pattern could be extracted.'
+                # dic['类型'] = '非法'
+                dic['error'] = 'Illegal time'
 
             else:
-                result = {}
-                dic['type'] = 'timedelta'
-                dic['timedelta'] = self.timeSpan
-                Time_NLP_LOGGER.debug(f"timedelta: {dic['timedelta']}")
-                index = dic['timedelta'].find('days')
+                # result = {}
+                dic['error'] = 'Time delta'
+                # dic['时间差'] = self.timeSpan
+                # dic['error'] = '非时间点.'
+                # Time_NLP_LOGGER.debug(f"timedelta: {dic['timedelta']}")
+                # index = dic['timedelta'].find('days')
 
-                days = int(dic['timedelta'][:index - 1])
-                result['year'] = int(days / 365)
-                result['month'] = int(days / 30 - result['year'] * 12)
-                result['day'] = int(days - result['year'] * 365 -
-                                    result['month'] * 30)
-                index = dic['timedelta'].find(',')
-                time = dic['timedelta'][index + 1:]
-                time = time.split(':')
-                result['hour'] = int(time[0])
-                result['minute'] = int(time[1])
-                result['second'] = int(time[2])
-                dic['timedelta'] = result
+                # days = int(dic['timedelta'][:index - 1])
+                # result['year'] = int(days / 365)
+                # result['month'] = int(days / 30 - result['year'] * 12)
+                # result['day'] = int(days - result['year'] * 365 -
+                #                     result['month'] * 30)
+                # index = dic['timedelta'].find(',')
+                # time = dic['timedelta'][index + 1:]
+                # time = time.split(':')
+                # result['hour'] = int(time[0])
+                # result['minute'] = int(time[1])
+                # result['second'] = int(time[2])
+                # dic['timedelta'] = result
         else:
             if len(res) == 0:
-                dic['type'] = 'error'
-                dic['error'] = 'no time pattern could be extracted.'
+                # dic['类型'] = '无时间'
+                dic['error'] = 'No time'
             elif len(res) == 1:
-                dic['type'] = 'timestamp'
-                dic['timestamp'] = res[0].time.format("YYYY-MM-DD HH:mm:ss")
-                dic['granularity'] = res[0].get_granularity()
+                # dic['类型'] = '时间点'
+                dic['time_start'] = res[0].time.format("YYYY-MM-DD HH:mm:ss")
+                dic['time_end'] = res[0].time.format("YYYY-MM-DD HH:mm:ss")
+                dic['granularity'] = [res[0].get_granularity(),res[0].get_granularity()]
                 dic['fuzzy'] = res[0].get_fuzzy()
             else:
-                dic['type'] = 'timespan'
-                dic['timespan'] = [
-                    res[0].time.format("YYYY-MM-DD HH:mm:ss"),
-                    res[1].time.format("YYYY-MM-DD HH:mm:ss")
-                ]
+                # dic['类型'] = '时间段'
+                dic['time_start'] = res[0].time.format("YYYY-MM-DD HH:mm:ss")
+                dic['time_end'] = res[1].time.format("YYYY-MM-DD HH:mm:ss")
                 dic['granularity'] = [
                     res[0].get_granularity(), res[1].get_granularity()]
         return dic
@@ -154,22 +154,20 @@ class TimeNormalizer:
         待匹配字符串的清理空白符和语气助词以及大写数字转化的预处理
         :return:
         """
-        self.target = StringPreHandler.delKeyword(self.target,
+        self.target = StringPreHandler.del_keyword(self.target,
                                                   u"\\s+")  # 清理空白符
-        self.target = StringPreHandler.delKeyword(self.target,
+        self.target = StringPreHandler.del_keyword(self.target,
                                                   u"[的]+")  # 清理语气助词
-        self.target = StringPreHandler.numberTranslator(self.target)  # 大写数字转化
+        self.target = StringPreHandler.number_translator(self.target)  # 大写数字转化
         Time_NLP_LOGGER.debug(f'清理空白符和语气助词以及大写数字转化的预处理 {self.target}')
 
     def __timeEx(self):
         """
-        :param target: 输入文本字符串
-        :param timeBase: 输入基准时间
         :return: TimeUnit[]时间表达式类型数组
         """
-        startline = -1
-        endline = -1
-        rpointer = 0
+        start_line = -1
+        end_line = -1
+        r_pointer = 0
         temp = []
 
         match = self.pattern.finditer(self.target)
@@ -177,33 +175,38 @@ class TimeNormalizer:
         Time_NLP_LOGGER.debug('用正则提取关键字：')
         for m in match:
             Time_NLP_LOGGER.debug(m)
-            startline = m.start()
-            if startline == endline:
-                rpointer -= 1
-                temp[rpointer] = temp[rpointer] + m.group()
+            start_line = m.start()
+            if start_line == end_line:
+                r_pointer -= 1
+                temp[r_pointer] = temp[r_pointer] + m.group()
             else:
                 temp.append(m.group())
-            endline = m.end()
-            rpointer += 1
+            end_line = m.end()
+            r_pointer += 1
         Time_NLP_LOGGER.debug('=======')
 
         res = []
         # 时间上下文： 前一个识别出来的时间会是下一个时间的上下文，用于处理：周六3点到5点这样的多个时间的识别，第二个5点应识别到是周六的。
-        contextTp = TimePoint()
+        context_tmp = TimePoint()
         Time_NLP_LOGGER.debug(f"基础时间 {self.timeBase}")
         Time_NLP_LOGGER.debug(f'待处理的字段: {temp}')
-        for i in range(0, rpointer):
+        for i in range(0, r_pointer):
             # 这里是一个类嵌套了一个类
-            Time_NLP_LOGGER.debug('Last TP:{}'.format(contextTp))
-            time_convert_result = TimeUnit(temp[i], self, contextTp)
+            Time_NLP_LOGGER.debug('Last TP:{}'.format(context_tmp))
+            try:
+                time_convert_result = TimeUnit(temp[i], self, context_tmp)
+            except Exception as err:
+                self.isTimeSpan = True
+                self.invalidSpan = True
+                break
             if time_convert_result.get_fuzzy()=='null':
                 # Time_NLP_LOGGER.debug('Fuzzy Not rec')
-                time_convert_result.norm_set_fuzzytime(match_raw=self.target)
+                time_convert_result.norm_set_fuzzy_time(match_raw=self.target)
             res.append(time_convert_result)
             # res[i].tp.tunit[3] = -1
 
             # 上一个时间点 -- 改
-            contextTp = res[i].tp
+            context_tmp = res[i].tp
 
             # contextTp = TimePoint()
 

@@ -3,8 +3,8 @@
 
 from time_converter import TimeNormalizer  # 引入包
 from time_converter.log import Time_NLP_LOGGER
-Time_NLP_LOGGER.setLevel(10)
-tn = TimeNormalizer(isPreferFuture=False)
+# Time_NLP_LOGGER.setLevel(10)
+tn = TimeNormalizer(is_prefer_future=False)
 
 
 def gao():
@@ -25,5 +25,5 @@ def test():
         print(res)
 
 if __name__ == "__main__":
-    # gao()
-    test()
+    gao()
+    # test()

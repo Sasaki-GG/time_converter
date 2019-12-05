@@ -2,31 +2,31 @@ from pprint import pprint
 
 
 class Lunar:
-    def __init__(self, lunarYear, lunarMonth, lunarDay, isleap):
+    def __init__(self, lunar_year, lunar_month, lunar_day, isleap):
         self.isleap = isleap
-        self.lunarDay = lunarDay
-        self.lunarMonth = lunarMonth
-        self.lunarYear = lunarYear
+        self.lunarDay = lunar_day
+        self.lunarMonth = lunar_month
+        self.lunarYear = lunar_year
 
 
 class Solar:
-    def __init__(self, solarYear, solarMonth, solarDay):
-        self.solarDay = solarDay
-        self.solarMonth = solarMonth
-        self.solarYear = solarYear
+    def __init__(self, solar_year, solar_month, solar_day):
+        self.solarDay = solar_day
+        self.solarMonth = solar_month
+        self.solarYear = solar_year
 
 
-def GetBitInt(data, length, shift):
+def get_bit_int(data, length, shift):
     return (data & (((1 << length) - 1) << shift)) >> shift
 
 
-def SolarToInt(y, m, d):
+def solar_to_int(y, m, d):
     m = (m + 9) % 12
     y -= int(m / 10)
     return 365 * y + int(y / 4) - int(y / 100) + int(y / 400) + int((m * 306 + 5) / 10) + (d - 1)
 
 
-def SolarFromInt(g):
+def solar_from_int(g):
     y = int((10000 * g + 14780) / 3652425)
     ddd = g - (365 * y + int(y / 4) - int(y / 100) + int(y / 400))
     if ddd < 0:
@@ -126,35 +126,35 @@ class LunarSolarConverter:
                  0x10703c, 0x10724f,
                  0x107444, 0x107638, 0x10784c, 0x107a3f, 0x107c53, 0x107e48]
 
-    def LunarToSolar(self, lunar):
+    def lunar_to_solar(self, lunar):
         days = LunarSolarConverter.lunar_month_days[lunar.lunarYear - LunarSolarConverter.lunar_month_days[0]]
-        leap = GetBitInt(days, 4, 13)
+        leap = get_bit_int(days, 4, 13)
         offset = 0
-        loopend = leap
+        loop_end = leap
         if not lunar.isleap:
 
             if lunar.lunarMonth <= leap or leap == 0:
 
-                loopend = lunar.lunarMonth - 1
+                loop_end = lunar.lunarMonth - 1
 
             else:
 
-                loopend = lunar.lunarMonth
+                loop_end = lunar.lunarMonth
 
-        for i in range(0, loopend):
-            offset += GetBitInt(days, 1, 12 - i) == 1 and 30 or 29
+        for i in range(0, loop_end):
+            offset += get_bit_int(days, 1, 12 - i) == 1 and 30 or 29
 
         offset += lunar.lunarDay
 
         solar11 = LunarSolarConverter.solar_1_1[lunar.lunarYear - LunarSolarConverter.solar_1_1[0]]
 
-        y = GetBitInt(solar11, 12, 9)
-        m = GetBitInt(solar11, 4, 5)
-        d = GetBitInt(solar11, 5, 0)
+        y = get_bit_int(solar11, 12, 9)
+        m = get_bit_int(solar11, 4, 5)
+        d = get_bit_int(solar11, 5, 0)
 
-        return SolarFromInt(SolarToInt(y, m, d) + offset - 1)
+        return solar_from_int(solar_to_int(y, m, d) + offset - 1)
 
-    def SolarToLunar(self, solar):
+    def solar_to_lunar(self, solar):
 
         lunar = Lunar(0, 0, 0, False)
         index = solar.solarYear - LunarSolarConverter.solar_1_1[0]
@@ -163,41 +163,41 @@ class LunarSolarConverter:
             index -= 1
 
         solar11 = LunarSolarConverter.solar_1_1[index]
-        y = GetBitInt(solar11, 12, 9)
-        m = GetBitInt(solar11, 4, 5)
-        d = GetBitInt(solar11, 5, 0)
-        offset = SolarToInt(solar.solarYear, solar.solarMonth, solar.solarDay) - SolarToInt(y, m, d)
+        y = get_bit_int(solar11, 12, 9)
+        m = get_bit_int(solar11, 4, 5)
+        d = get_bit_int(solar11, 5, 0)
+        offset = solar_to_int(solar.solarYear, solar.solarMonth, solar.solarDay) - solar_to_int(y, m, d)
 
         days = LunarSolarConverter.lunar_month_days[index]
-        leap = GetBitInt(days, 4, 13)
+        leap = get_bit_int(days, 4, 13)
 
-        lunarY = index + LunarSolarConverter.solar_1_1[0]
-        lunarM = 1
+        lunar_year = index + LunarSolarConverter.solar_1_1[0]
+        lunar_month = 1
         offset += 1
 
         for i in range(0, 13):
 
-            dm = GetBitInt(days, 1, 12 - i) == 1 and 30 or 29
+            dm = get_bit_int(days, 1, 12 - i) == 1 and 30 or 29
             if offset > dm:
 
-                lunarM += 1
+                lunar_month += 1
                 offset -= dm
 
             else:
 
                 break
 
-        lunarD = int(offset)
-        lunar.lunarYear = lunarY
-        lunar.lunarMonth = lunarM
+        lunar_day = int(offset)
+        lunar.lunarYear = lunar_year
+        lunar.lunarMonth = lunar_month
         lunar.isleap = False
-        if leap != 0 and lunarM > leap:
+        if leap != 0 and lunar_month > leap:
 
-            lunar.lunarMonth = lunarM - 1
-            if lunarM == leap + 1:
+            lunar.lunarMonth = lunar_month - 1
+            if lunar_month == leap + 1:
                 lunar.isleap = True
 
-        lunar.lunarDay = lunarD
+        lunar.lunarDay = lunar_day
         return lunar
 
     def __init__(self):
@@ -208,9 +208,9 @@ if __name__ == '__main__':
     converter = LunarSolarConverter()
     solar = Solar(2111, 1, 25)
     pprint(vars(solar))
-    lunar = converter.SolarToLunar(solar)
+    lunar = converter.solar_to_lunar(solar)
     pprint(vars(lunar))
-    solar = converter.LunarToSolar(lunar)
+    solar = converter.lunar_to_solar(lunar)
     pprint(vars(solar))
     print(len(converter.solar_1_1))
     print("Done")

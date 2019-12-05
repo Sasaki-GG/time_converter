@@ -4,7 +4,7 @@ import regex as re
 # * 字符串预处理模块，为分析器TimeNormalizer提供相应的字符串预处理服务
 class StringPreHandler:
     @classmethod
-    def delKeyword(cls, target, rules):
+    def del_keyword(cls, target, rules):
         """
         该方法删除一字符串中所有匹配某一规则字串
         可用于清理一个字符串中的空白符和语气助词
@@ -17,7 +17,7 @@ class StringPreHandler:
         return res
 
     @classmethod
-    def numberTranslator(cls, target):
+    def number_translator(cls, target):
         """
         该方法可以将字符串中所有的用汉字表示的数字转化为用阿拉伯数字表示的数字
         如"这里有一千两百个人，六百零五个来自中国"可以转化为
@@ -40,7 +40,7 @@ class StringPreHandler:
             s = list(filter(None, s))
             num = 0
             if len(s) == 2:
-                num += cls.wordToNumber(s[0]) * 10000 + cls.wordToNumber(
+                num += cls.word_to_number(s[0]) * 10000 + cls.word_to_number(
                     s[1]) * 1000
             target = pattern.sub(str(num), target, 1)
 
@@ -53,7 +53,7 @@ class StringPreHandler:
             s = list(filter(None, s))
             num = 0
             if len(s) == 2:
-                num += cls.wordToNumber(s[0]) * 1000 + cls.wordToNumber(
+                num += cls.word_to_number(s[0]) * 1000 + cls.word_to_number(
                     s[1]) * 100
             target = pattern.sub(str(num), target, 1)
 
@@ -66,19 +66,19 @@ class StringPreHandler:
             s = list(filter(None, s))
             num = 0
             if len(s) == 2:
-                num += cls.wordToNumber(s[0]) * 100 + cls.wordToNumber(
+                num += cls.word_to_number(s[0]) * 100 + cls.word_to_number(
                     s[1]) * 10
             target = pattern.sub(str(num), target, 1)
 
         pattern = re.compile(u"[零一二两三四五六七八九]")
         match = pattern.finditer(target)
         for m in match:
-            target = pattern.sub(str(cls.wordToNumber(m.group())), target, 1)
+            target = pattern.sub(str(cls.word_to_number(m.group())), target, 1)
 
         pattern = re.compile(u"(?<=(周|星期))[末天日]")
         match = pattern.finditer(target)
         for m in match:
-            target = pattern.sub(str(cls.wordToNumber(m.group())), target, 1)
+            target = pattern.sub(str(cls.word_to_number(m.group())), target, 1)
 
         pattern = re.compile(u"(?<!(周|星期))0?[0-9]?十[0-9]?")
         match = pattern.finditer(target)
@@ -86,10 +86,10 @@ class StringPreHandler:
             group = m.group()
             s = group.split(u"十")
             num = 0
-            ten = cls.strToInt(s[0])
+            ten = cls.string_to_int(s[0])
             if ten == 0:
                 ten = 1
-            unit = cls.strToInt(s[1])
+            unit = cls.string_to_int(s[1])
             num = ten * 10 + unit
             target = pattern.sub(str(num), target, 1)
 
@@ -133,18 +133,18 @@ class StringPreHandler:
             s = list(filter(None, s))
             num = 0
             if len(s) == 1:
-                tenthousand = int(s[0])
-                num += tenthousand * 10000
+                ten_thousand = int(s[0])
+                num += ten_thousand * 10000
             elif len(s) == 2:
-                tenthousand = int(s[0])
-                num += tenthousand * 10000
+                ten_thousand = int(s[0])
+                num += ten_thousand * 10000
                 num += int(s[1])
             target = pattern.sub(str(num), target, 1)
 
         return target
 
     @classmethod
-    def wordToNumber(cls, s):
+    def word_to_number(cls, s):
         """
         方法numberTranslator的辅助方法，可将[零-九]正确翻译为[0-9]
         :param s: 大写数字
@@ -175,7 +175,7 @@ class StringPreHandler:
             return -1
 
     @classmethod
-    def strToInt(cls, s):
+    def string_to_int(cls, s):
         try:
             res = int(s)
         except Exception:

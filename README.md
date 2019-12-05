@@ -10,12 +10,6 @@ fork 自 [zhanzecheng/Time_NLP](https://github.com/zhanzecheng/Time_NLP)
 - Python3 版本 https://github.com/ryanInf/Time-NLPY/
 - Java 版本 https://github.com/shinyke/Time-NLP
 
-## 配置
-```py
-TimeNormalizer(isPreferFuture=True):
-```
-对于下午两点、晚上十点这样的词汇，在不特别指明的情况下，默认返回明天的时间点。
-
 ## 安装使用
 
 开发前安装依赖
@@ -156,14 +150,14 @@ temp []
 
 ## 关于节假日的增加方法：
 
-1. 在resource目录下的holi_lunar(阴历)或holi_solar(阳历)文件内按照格式加入新增的节日名称和日期
-2. 在resource目录下的regex.txt文件内加入相应节日的正则匹配，并删除regex.pkl缓存文件
-3. 在TimeUnit类中的norm_setHoliday方法同样加入节日的正则匹配
+- 在resource目录下的holi_lunar(阴历)或holi_solar(阳历)文件内按照格式加入新增的节日名称和日期
+- 在resource目录下的regex.txt文件内加入相应节日的正则匹配，并删除regex.pkl缓存文件
+- 在TimeUnit类中的norm_setHoliday方法同样加入节日的正则匹配
 
 ## TODO
 
 
-- [ ] 时间粒度识别：
+- [x] 时间粒度识别：
 
     在TimeUnit类中加入self.granularity
 
@@ -182,12 +176,12 @@ temp []
 
     可以在self.tp 基础上增加，或者类中加入新的函数
 
-- [ ] 季节（3-5月为春，依次类推）、季度（1-3月为第一季度）
+- [x] 季节（3-5月为春，依次类推）、季度（1-3月为第一季度）
     、月初（设置为 月 - 上旬）
     
     区别：早春（3月）、晚春（5月）
 
-- [ ] 时间模糊度：
+- [x] 时间模糊度：
 
     在TimeUnit类中加入self.fuzzy
 
@@ -211,9 +205,9 @@ temp []
     万圣节、
     复活节 等
 
-- [ ] “上周周一” 存在问题： 定位到 “这周的周一”
+- [x] “上周周一” 存在问题： 定位到 “这周的周一”
 
-- [ ] “前年到去年”识别目前存在问题： “去年”被设置时间后到“大前年”
+- [x] “前年到去年”识别目前存在问题： “去年”被设置时间后到“大前年”
 
 - [ ] “14到15年”识别目前存在问题：14不会被当做日期
 
