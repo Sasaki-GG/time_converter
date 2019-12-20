@@ -1,7 +1,18 @@
+"""
+@description: 配置信息
+@author: GG Sasaki
+@email: gg.pan@foxmail.com
+@time: 2019-11-08
+@version: 0.8.5
+"""
+
 from pprint import pprint
 
 
 class Lunar:
+    """
+    阴历
+    """
     def __init__(self, lunar_year, lunar_month, lunar_day, isleap):
         self.isleap = isleap
         self.lunarDay = lunar_day
@@ -10,6 +21,9 @@ class Lunar:
 
 
 class Solar:
+    """
+    阳历
+    """
     def __init__(self, solar_year, solar_month, solar_day):
         self.solarDay = solar_day
         self.solarMonth = solar_month
@@ -17,16 +31,35 @@ class Solar:
 
 
 def get_bit_int(data, length, shift):
+    """
+    位数转int
+    :param data:
+    :param length:
+    :param shift:
+    :return:
+    """
     return (data & (((1 << length) - 1) << shift)) >> shift
 
 
 def solar_to_int(y, m, d):
+    """
+    阳历转天数
+    :param y:
+    :param m:
+    :param d:
+    :return:
+    """
     m = (m + 9) % 12
     y -= int(m / 10)
     return 365 * y + int(y / 4) - int(y / 100) + int(y / 400) + int((m * 306 + 5) / 10) + (d - 1)
 
 
 def solar_from_int(g):
+    """
+    天数转阳历
+    :param g:
+    :return:
+    """
     y = int((10000 * g + 14780) / 3652425)
     ddd = g - (365 * y + int(y / 4) - int(y / 100) + int(y / 400))
     if ddd < 0:
@@ -42,6 +75,9 @@ def solar_from_int(g):
 
 
 class LunarSolarConverter:
+    """
+    阴历转阳历
+    """
     #####################################################################################
     # 1888~2111年农历数据表
     # 农历数据 每个元素的存储格式如下：
@@ -126,7 +162,13 @@ class LunarSolarConverter:
                  0x10703c, 0x10724f,
                  0x107444, 0x107638, 0x10784c, 0x107a3f, 0x107c53, 0x107e48]
 
-    def lunar_to_solar(self, lunar):
+    @classmethod
+    def lunar_to_solar(cls, lunar):
+        """
+        阴历转阳历方法
+        :param lunar:
+        :return:
+        """
         days = LunarSolarConverter.lunar_month_days[lunar.lunarYear - LunarSolarConverter.lunar_month_days[0]]
         leap = get_bit_int(days, 4, 13)
         offset = 0
@@ -154,8 +196,13 @@ class LunarSolarConverter:
 
         return solar_from_int(solar_to_int(y, m, d) + offset - 1)
 
-    def solar_to_lunar(self, solar):
-
+    @classmethod
+    def solar_to_lunar(cls, solar):
+        """
+        阳历转阴历
+        :param solar:
+        :return:
+        """
         lunar = Lunar(0, 0, 0, False)
         index = solar.solarYear - LunarSolarConverter.solar_1_1[0]
         data = (solar.solarYear << 9) | (solar.solarMonth << 5) | solar.solarDay
@@ -176,15 +223,11 @@ class LunarSolarConverter:
         offset += 1
 
         for i in range(0, 13):
-
             dm = get_bit_int(days, 1, 12 - i) == 1 and 30 or 29
             if offset > dm:
-
                 lunar_month += 1
                 offset -= dm
-
             else:
-
                 break
 
         lunar_day = int(offset)

@@ -1,8 +1,21 @@
+"""
+@description: 字符串预处理
+@author: GG Sasaki
+@email: gg.pan@foxmail.com
+@time: 2019-11-08
+@version: 0.8.5
+"""
+
 import regex as re
+import json
+import os
 
 
 # * 字符串预处理模块，为分析器TimeNormalizer提供相应的字符串预处理服务
-class StringPreHandler:
+class StringPreHandler(object):
+    """
+    字符串的处理
+    """
     @classmethod
     def del_keyword(cls, target, rules):
         """
@@ -181,3 +194,44 @@ class StringPreHandler:
         except Exception:
             res = 0
         return res
+
+    @classmethod
+    def description_to_span(cls, s):
+        with open(os.path.dirname(__file__) +
+                  '/resource/description_span.json',
+                  'r',
+                  encoding='utf-8') as f:
+            des_dic = json.load(f)
+
+        rule = r'月' + r'周' 
+        pattern = re.compile(rule)
+        match = pattern.search(s)
+        if match is not None:
+            s = s.replace('月周', '月1号周')
+
+        for k, v in des_dic.items():
+            rule = r'周' + k + r'(?!\d)'
+            pattern = re.compile(rule)
+            match = pattern.search(s)
+            if match is not None:
+                s = s.replace(k, '1' + v)
+
+            rule = r'月' + k + r'(?!\d)'
+            pattern = re.compile(rule)
+            match = pattern.search(s)
+            if match is not None:
+                s = s.replace(k, '1号' + v)
+
+            rule = r'年' + k + r'(?!\d)'
+            pattern = re.compile(rule)
+            match = pattern.search(s)
+            if match is not None:
+                s = s.replace(k, '1月1号' + v)
+
+            rule = k + r'(?!\d)'
+            pattern = re.compile(rule)
+            match = pattern.search(s)
+            if match is not None:
+                s = s.replace(k, v)
+
+        return s

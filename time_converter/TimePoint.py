@@ -1,3 +1,12 @@
+"""
+@description: 时间点初始化
+@author: GG Sasaki
+@email: gg.pan@foxmail.com
+@time: 2019-11-08
+@version: 0.8.5
+"""
+
+
 class TimePoint:
     """
     时间表达式单元规范化对应的内部类,对应时间表达式规范化的每个字段。\n

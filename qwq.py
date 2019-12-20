@@ -3,8 +3,9 @@
 
 from time_converter import TimeNormalizer  # 引入包
 from time_converter.log import Time_NLP_LOGGER
-# Time_NLP_LOGGER.setLevel(10)
-tn = TimeNormalizer(is_prefer_future=False)
+Time_NLP_LOGGER.setLevel(10)
+# tn = TimeNormalizer(is_prefer_future=False)
+import arrow
 
 
 def gao():
@@ -16,14 +17,21 @@ def gao():
             print('Sentence:',line)
             print('Result:',res)
 
+
 def test():
     tn = TimeNormalizer()
 
     while True:
-        x = input()
-        res = tn.parse(target=x)
+        x = input('sentence: ')
+        # y = input('base time:')
+        y = ''
+        if y != '':
+            target = arrow.get(y)
+            res = tn.parse(target=x, time_base=target)
+        else:
+            res = tn.parse(target=x)
         print(res)
 
 if __name__ == "__main__":
-    gao()
-    # test()
+    # gao()
+    test()

@@ -1,3 +1,11 @@
+"""
+@description: 单个时间块解析
+@author: GG Sasaki
+@email: gg.pan@foxmail.com
+@time: 2019-11-08
+@version: 0.8.5
+"""
+
 from .log import Time_NLP_LOGGER
 import regex as re
 import arrow
@@ -8,16 +16,20 @@ from .LunarSolarConverter import Lunar, LunarSolarConverter
 
 
 # 时间语句分析
-class TimeUnit:
-    def __init__(self, exp_time, normalizer, context_tp):
-        '''
+class TimeUnit(object):
+    """
+    单个时间单元
+    """
+    def __init__(self, exp_time, normalizer, raw_base_time, context_tp):
+        """
         exp_time: 时间表达式
         normalizer: TimeNormalizer 类
-        '''
+        """
         Time_NLP_LOGGER.debug(f'TimeUnit Init: {exp_time} {context_tp}')
         self._noyear = False
         self.exp_time = exp_time
         self.normalizer = normalizer
+        self.raw_base_time = arrow.get(raw_base_time).format('YYYY-M-D-H-m-s')
         self.tp = TimePoint()
         self.tp_origin = context_tp
         self.isFirstTimeSolveContext = True
@@ -25,19 +37,24 @@ class TimeUnit:
         self.time = arrow.now('Asia/Shanghai')
 
         self.granularity = 'null'
-
         self.fuzzy = 'null'
-
         self.time_normalization()
 
-
     def __repr__(self):
+        """
+        返回时间
+        :return:
+        """
         if self.normalizer.isTimeSpan:
             return str(self.normalizer.timeSpan)
         else:
             return str(self.time)
 
     def time_normalization(self):
+        """
+        时间-模糊时间处理
+        :return:
+        """
         self.norm_set_year()
         self.norm_set_season()
         self.norm_set_month()
@@ -87,11 +104,11 @@ class TimeUnit:
                 days += 30 * self.tp.tunit[1]
             if self.tp.tunit[2] > 0:
                 days += self.tp.tunit[2]
-            tunit = self.tp.tunit
+            time_unit = self.tp.tunit
             for i in range(3, 6):
                 if self.tp.tunit[i] < 0:
-                    tunit[i] = 0
-            seconds = tunit[3] * 3600 + tunit[4] * 60 + tunit[5]
+                    time_unit[i] = 0
+            seconds = time_unit[3] * 3600 + time_unit[4] * 60 + time_unit[5]
             if seconds == 0 and days == 0:
                 self.normalizer.invalidSpan = True
             self.normalizer.timeSpan = self.gen_span(days, seconds)
@@ -99,10 +116,10 @@ class TimeUnit:
             return
 
         time_grid = self.normalizer.timeBase.split('-')
-        tunit_pointer = 5
-        while tunit_pointer >= 0 and self.tp.tunit[tunit_pointer] < 0:
-            tunit_pointer -= 1
-        for i in range(0, tunit_pointer):
+        time_unit_pointer = 5
+        while time_unit_pointer >= 0 and self.tp.tunit[time_unit_pointer] < 0:
+            time_unit_pointer -= 1
+        for i in range(0, time_unit_pointer):
             if self.tp.tunit[i] < 0:
                 self.tp.tunit[i] = int(time_grid[i])
 
@@ -110,9 +127,17 @@ class TimeUnit:
         Time_NLP_LOGGER.debug(f'时间点: {self.time}')
 
     def get_granularity(self):
+        """
+        获得时间粒度
+        :return:
+        """
         return self.granularity
 
     def get_fuzzy(self):
+        """
+        获得时间模糊度
+        :return:
+        """
         return self.fuzzy
 
     def norm_set_fuzzy_time(self, match_raw=None):
@@ -162,9 +187,12 @@ class TimeUnit:
 
         if match_raw:
             Time_NLP_LOGGER.debug('FUZZY :{}\t{}'.format(target_sentence, self.fuzzy))
-        pass
 
     def set_granularity(self):
+        """
+        设置并初始化时间粒度
+        :return:
+        """
         id2gra = {
             0: 'year',
             1: 'half_year',
@@ -180,21 +208,26 @@ class TimeUnit:
         gra2id = {v:k for k,v in id2gra.items()}
         coarse_grain = ['year', 'month', 'day', 'hour', 'minute', 'second']
         coarse_list = [gra2id[x] for x in coarse_grain]
-        # Time_NLP_LOGGER.debug('list:{}'.format(coarse_list))
+
         ans = -1
         for x, rec_tar in zip(self.tp.tunit, coarse_list):
             if x != -1:
                 ans = rec_tar
-        # Time_NLP_LOGGER.debug('Gra1:{}'.format(id2gra[ans]))
+
         tmp = self.get_keyword_gra(id2gra, gra2id)
         if tmp != -1:
             ans = max(ans, tmp)
-            # Time_NLP_LOGGER.debug('Gra2:{}'.format(id2gra[tmp]))
         if ans != -1:
             return id2gra[ans]
         return ans
 
     def get_keyword_gra(self, id2gra, gra2id):
+        """
+        获取关键字时间的粒度
+        :param id2gra:
+        :param gra2id:
+        :return:
+        """
         sentence = self.exp_time
         new_grad = copy.deepcopy(gra2id)
 
@@ -205,21 +238,33 @@ class TimeUnit:
         new_grad['秋天'] = 2
         new_grad['冬天'] = 2
 
-        # Time_NLP_LOGGER.debug('NewGrad:{}'.format(new_grad))
         for k in new_grad.keys():
             if k in sentence and k != 'minute':
                 ans = max(ans, new_grad[k])
 
         return ans
 
-    def gen_span(self, days, seconds):
+    @classmethod
+    def gen_span(cls, days, seconds):
+        """
+        将秒数转化为日期
+        :param days:
+        :param seconds:
+        :return:
+        """
         day = int(seconds / (3600 * 24))
         h = int((seconds % (3600 * 24)) / 3600)
         m = int(((seconds % (3600 * 24)) % 3600) / 60)
         s = int(((seconds % (3600 * 24)) % 3600) % 60)
         return str(days + day) + ' days, ' + "%d:%02d:%02d" % (h, m, s)
 
-    def gen_time(self, time_unit):
+    @classmethod
+    def gen_time(cls, time_unit):
+        """
+        格式化时间
+        :param time_unit:
+        :return:
+        """
         time = arrow.get('1970-01-01 00:00:00')
         if time_unit[0] > 0:
             time = time.replace(year=int(time_unit[0]))
@@ -280,7 +325,7 @@ class TimeUnit:
 
     def norm_set_season(self):
         """
-        月-规范化方法--该方法识别时间表达式单元的月字段
+        季节-规范化方法--该方法识别时间表达式单元的季字段
         :return:
         """
         rule = u"(春天)|(春季)|(早春)|(春)"
@@ -347,8 +392,6 @@ class TimeUnit:
             self.tp.tunit[1] = int(7)
             self.granularity = 'half_year'
 
-
-
     def norm_set_month(self):
         """
         月-规范化方法--该方法识别时间表达式单元的月字段
@@ -404,13 +447,13 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            matchStr = match.group()
+            match_string = match.group()
             p = re.compile(u"(月|\\.|\\-)")
-            m = p.search(matchStr)
+            m = p.search(match_string)
             if m is not None:
-                splitIndex = m.start()
-                month = matchStr[0: splitIndex]
-                day = matchStr[splitIndex + 1:]
+                split_index = m.start()
+                month = match_string[0: split_index]
+                day = match_string[split_index + 1:]
                 self.tp.tunit[1] = int(month)
                 self.tp.tunit[2] = int(day)
                 # 处理倾向于未来时间的情况
@@ -443,6 +486,10 @@ class TimeUnit:
             self.granularity = 'day'
 
     def norm_check_keyword(self):
+        """
+        一天内的关键字转换
+        :return:
+        """
         # * 对关键字：早（包含早上/早晨/早间），上午，中午,午间,下午,午后,晚上,傍晚,晚间,晚,pm,PM的正确时间计算
         # * 规约：
         # * 1.中午/午间0-10点视为12-22点
@@ -465,7 +512,26 @@ class TimeUnit:
             self.isAllDayTime = False
             self.granularity = 'hour'
 
-        rule = u"早上|早晨|早间|晨间|今早|明早|早|清晨"
+        rule = u"明早"
+        pattern = re.compile(rule)
+        match = pattern.search(self.exp_time)
+        if match is not None:
+            if self.tp.tunit[3] == -1:  # 增加对没有明确时间点，只写了“早上/早晨/早间”这种情况的处理
+                self.tp.tunit[3] = RangeTimeEnum.early_morning
+                # 处理倾向于未来时间的情况
+            elif 12 <= self.tp.tunit[3] <= 23:
+                self.tp.tunit[3] -= 12
+            elif self.tp.tunit[3] == 0:
+                self.tp.tunit[3] = 12
+            Time_NLP_LOGGER.debug('Tomorrow bug')
+            Time_NLP_LOGGER.debug('last unit:{}'.format(self.tp))
+            self.prefer_future(3)
+            # self.add_time()
+            self.check_context_time(3, morning=True)
+            self.isAllDayTime = False
+            self.granularity = 'hour'
+
+        rule = u"早上|早晨|早间|晨间|今早|早|清晨"
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
@@ -493,7 +559,7 @@ class TimeUnit:
                 self.tp.tunit[3] = 12
             # 处理倾向于未来时间的情况
             # self.preferFuture(3)
-            self.check_context_time(3)
+            self.check_context_time(3, morning=True)
             self.isAllDayTime = False
             self.granularity = 'hour'
 
@@ -569,13 +635,12 @@ class TimeUnit:
         rule = u"([0-9]+(?=分(?!钟)))|((?<=((?<!小)[点时]))[0-5]?[0-9](?!刻))"
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
-        if match is not None:
-            if match.group() != '':
-                self.tp.tunit[4] = int(match.group())
-                # 处理倾向于未来时间的情况
-                # self.preferFuture(4)
-                self.isAllDayTime = False
-                self.granularity = 'minute'
+        if match is not None and match.group() != '':
+            self.tp.tunit[4] = int(match.group())
+            # 处理倾向于未来时间的情况
+            # self.preferFuture(4)
+            self.isAllDayTime = False
+            self.granularity = 'minute'
         # 加对一刻，半，3刻的正确识别（1刻为15分，半为30分，3刻为45分）
         rule = u"(?<=[点时])[1一]刻(?!钟)"
         pattern = re.compile(rule)
@@ -907,29 +972,30 @@ class TimeUnit:
         if match is not None:
             if self.tp.tunit[0] == -1:
                 self.tp.tunit[0] = int(self.normalizer.timeBase.split('-')[0])
-            holi = match.group()
-            if u'节' not in holi:
-                holi += u'节'
-            if holi in self.normalizer.holi_solar:
-                date = self.normalizer.holi_solar[holi].split('-')
-            elif holi in self.normalizer.holi_lunar:
-                date = self.normalizer.holi_lunar[holi].split('-')
-                lsConverter = LunarSolarConverter()
+            holiday = match.group()
+            if u'节' not in holiday:
+                holiday += u'节'
+            if holiday in self.normalizer.holi_solar:
+                date = self.normalizer.holi_solar[holiday].split('-')
+            elif holiday in self.normalizer.holi_lunar:
+                date = self.normalizer.holi_lunar[holiday].split('-')
+                lunar_solar_converter = LunarSolarConverter()
                 lunar = Lunar(self.tp.tunit[0], int(date[0]), int(date[1]), False)
-                solar = lsConverter.lunar_to_solar(lunar)
+                solar = lunar_solar_converter.lunar_to_solar(lunar)
                 self.tp.tunit[0] = solar.solarYear
                 date[0] = solar.solarMonth
                 date[1] = solar.solarDay
             else:
-                holi = holi.strip(u'节')
-                if holi in ['小寒', '大寒']:
+                holiday = holiday.strip(u'节')
+                if holiday in ['小寒', '大寒']:
                     self.tp.tunit[0] += 1
-                date = self.china_24_st(self.tp.tunit[0], holi)
+                date = self.china_24_st(self.tp.tunit[0], holiday)
             self.tp.tunit[1] = int(date[0])
             self.tp.tunit[2] = int(date[1])
             self.granularity = 'day'
 
-    def china_24_st(self, year: int, china_st: str):
+    @classmethod
+    def china_24_st(cls, year: int, china_st: str):
         """
         二十世纪和二十一世纪，24节气计算
         :param year: 年份
@@ -988,6 +1054,10 @@ class TimeUnit:
         :return:
         """
         # 这一块还是用了断言表达式
+
+        # TODO LIST
+        Time_NLP_LOGGER.debug('last timeBase:{}'.format(self.normalizer.timeBase))
+
         cur = arrow.get(self.normalizer.timeBase, "YYYY-M-D-H-m-s")
         flag = [False, False, False]
 
@@ -995,7 +1065,9 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            Time_NLP_LOGGER.debug('raw_base : {}'.format(self.raw_base_time))
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
+            Time_NLP_LOGGER.debug('cur : {}'.format(cur))
             flag[0] = True
             cur = cur.shift(years=-2)
 
@@ -1003,7 +1075,9 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            Time_NLP_LOGGER.debug('raw_base : {}'.format(self.raw_base_time))
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
+            Time_NLP_LOGGER.debug('cur : {}'.format(cur))
             flag[0] = True
             cur = cur.shift(years=-1)
 
@@ -1011,7 +1085,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[0] = True
             cur = cur.shift(years=0)
 
@@ -1019,7 +1093,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[0] = True
             cur = cur.shift(years=1)
 
@@ -1027,45 +1101,52 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[0] = True
             cur = cur.shift(years=2)
 
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(cur))
         rule = u"上*上(个)?月"
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[1] = True
             rule = u"上"
             pattern = re.compile(rule)
             match = pattern.findall(self.exp_time)
             cur = cur.shift(months=-len(match))
 
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(flag))
+
         rule = u"(本|这个)月"
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[1] = True
             cur = cur.shift(months=0)
+
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(flag))
 
         rule = u"下*下(个)?月"
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[1] = True
             rule = u"下"
             pattern = re.compile(rule)
             match = pattern.findall(self.exp_time)
             cur = cur.shift(months=len(match))
 
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(flag))
+
         rule = u"大*大前天"
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[2] = True
             rule = u"大"
             pattern = re.compile(rule)
@@ -1076,7 +1157,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[2] = True
             cur = cur.shift(days=-2)
 
@@ -1084,7 +1165,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[2] = True
             cur = cur.shift(days=-1)
 
@@ -1092,7 +1173,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[2] = True
             cur = cur.shift(days=0)
 
@@ -1100,7 +1181,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.normalizer.timeBase, "YYYY-M-D-H-m-s")
             flag[2] = True
             cur = cur.shift(days=1)
 
@@ -1108,7 +1189,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             flag[2] = True
             cur = cur.shift(days=2)
 
@@ -1116,7 +1197,7 @@ class TimeUnit:
         pattern = re.compile(rule)
         match = pattern.search(self.exp_time)
         if match is not None:
-            cur = arrow.now('Asia/Shanghai')
+            cur = arrow.get(self.raw_base_time, "YYYY-M-D-H-m-s")
             rule = u"大"
             pattern = re.compile(rule)
             match = pattern.findall(self.exp_time)
@@ -1199,18 +1280,18 @@ class TimeUnit:
             span = week - cur.weekday()
             cur = cur.shift(days=span)
             # 处理未来时间
-            # cur = self.preferFutureWeek(week, cur)
-            # cur = self.preferFutureWeek(week, cur)
+
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(flag))
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(cur))
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(self.tp))
 
         if flag[0] or flag[1] or flag[2]:
             self.tp.tunit[0] = int(cur.year)
-            # self.granularity = 'year'
         if flag[1] or flag[2]:
             self.tp.tunit[1] = int(cur.month)
-            # self.granularity = 'month'
         if flag[2]:
             self.tp.tunit[2] = int(cur.day)
-            # self.granularity = 'day'
+        Time_NLP_LOGGER.debug('last unit1:{}'.format(self.tp))
 
     def modify_time_base(self):
         """
@@ -1254,42 +1335,30 @@ class TimeUnit:
         :param check_time_index: _tp.tunit时间数组的下标
         :return:
         """
-        # 1. 检查被检查的时间级别之前，是否没有更高级的已经确定的时间，如果有，则不进行处理.
-        for i in range(0, check_time_index):
-            if self.tp.tunit[i] != -1:
-                return
-        # 2. 根据上下文补充时间
-        self.check_context_time(check_time_index)
-        # 3. 根据上下文补充时间后再次检查被检查的时间级别之前，是否没有更高级的已经确定的时间，如果有，则不进行倾向处理.
+        # # 1. 检查被检查的时间级别之前，是否没有更高级的已经确定的时间，如果有，则不进行处理.
+        # for i in range(0, check_time_index):
+        #     if self.tp.tunit[i] != -1:
+        #         return
+        # # 2. 根据上下文补充时间
+        # self.check_context_time(check_time_index)
+        # # 3. 根据上下文补充时间后再次检查被检查的时间级别之前，是否没有更高级的已经确定的时间，如果有，则不进行倾向处理.
+        Time_NLP_LOGGER.debug('Predict_unit:{}'.format(self.tp.tunit))
         for i in range(0, check_time_index):
             if self.tp.tunit[i] != -1:
                 return
 
-        # 4. 确认用户选项
-        if not self.normalizer.isPreferFuture:
-            return
-        # 5. 获取当前时间，如果识别到的时间小于当前时间，则将其上的所有级别时间设置为当前时间，并且其上一级的时间步长+1
-        time_arr = self.normalizer.timeBase.split('-')
+        # # 4. 确认用户选项
+        # if not self.normalizer.isPreferFuture:
+        #     return
+        # # 5. 获取当前时间，如果识别到的时间小于当前时间，则将其上的所有级别时间设置为当前时间，并且其上一级的时间步长+1
+        # time_arr = self.normalizer.timeBase.split('-')
         cur = arrow.get(self.normalizer.timeBase, "YYYY-M-D-H-m-s")
-        cur_unit = int(time_arr[check_time_index])
-        Time_NLP_LOGGER.debug(time_arr)
-        Time_NLP_LOGGER.debug(self.tp.tunit)
-        if self.tp.tunit[0] == -1:
-            self._noyear = True
-        else:
-            self._noyear = False
-        if cur_unit < self.tp.tunit[check_time_index]:
-            return
-        # if cur_unit == self.tp.tunit[checkTimeIndex]:
-        #     down_unit = int(time_arr[checkTimeIndex + 1])
-        #     if down_unit
+
         # 准备增加的时间单位是被检查的时间的上一级，将上一级时间+1
         cur = self.add_time(cur, check_time_index - 1)
         time_arr = cur.format("YYYY-M-D-H-m-s").split('-')
         for i in range(0, check_time_index):
             self.tp.tunit[i] = int(time_arr[i])
-            # if i == 1:
-            #     self.tp.tunit[i] += 1
 
     def _check_time(self, parse):
         """
@@ -1302,28 +1371,29 @@ class TimeUnit:
             # check the month
             Time_NLP_LOGGER.debug(parse)
             Time_NLP_LOGGER.debug(time_arr)
-            if parse[1] == int(time_arr[1]):
-                if parse[2] > int(time_arr[2]):
-                    parse[0] = parse[0] - 1
+            if parse[1] == int(time_arr[1]) and parse[2] > int(time_arr[2]):
+                parse[0] = parse[0] - 1
             self._noyear = False
 
-    def check_context_time(self, check_time_index):
+    def check_context_time(self, check_time_index, morning=False):
         """
         根据上下文时间补充时间信息
         :param check_time_index:
         :return:
         """
+        # Time_NLP_LOGGER.debug('origin time:{}'.format(self.tp_origin))
         for i in range(0, check_time_index):
             if self.tp.tunit[i] == -1 and self.tp_origin.tunit[i] != -1:
                 self.tp.tunit[i] = self.tp_origin.tunit[i]
+        # Time_NLP_LOGGER.debug('origin time:{}'.format(self.tp_origin))
         # 在处理小时这个级别时，如果上文时间是下午的且下文没有主动声明小时级别以上的时间，则也把下文时间设为下午
         if self.isFirstTimeSolveContext is True and check_time_index == 3 and self.tp_origin.tunit[
-            check_time_index] >= 12 and self.tp.tunit[check_time_index] < 12:
-            Time_NLP_LOGGER.debug('Context Time : {} {}'.format(self.tp_origin, self.tp))
+            check_time_index] >= 12 and self.tp.tunit[check_time_index] < 12 and morning==False:
             self.tp.tunit[check_time_index] += 12
         self.isFirstTimeSolveContext = False
 
-    def add_time(self, cur, fore_unit):
+    @classmethod
+    def add_time(cls, cur, fore_unit):
         if fore_unit == 0:
             cur = cur.shift(years=1)
         elif fore_unit == 1:

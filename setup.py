@@ -2,7 +2,7 @@ from setuptools import setup
 import setuptools
 
 setup(name="time_converter_0.8",
-      version="0.8.0",
+      version="0.8.5",
       keywords=("time", "nlp"),
       author="GG",
       author_email="gg.pan@foxmail.com",
